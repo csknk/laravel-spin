@@ -1,0 +1,422 @@
+#!/bin/bash
+#
+# composer=/usr/local/bin/composer.phar
+#
+# ## Requirements
+# - [Composer](https://getcomposer.org/), which should be referenced in your $PATH
+################################################################################
+
+################################################################################
+# Set the Project directory and include dependencies for this script.
+# Define some colours.
+#
+################################################################################
+# Set directory
+THIS=$(readlink -f ${BASH_SOURCE[0]})
+PROJECT_DIR=$(dirname $THIS)
+
+# Include dependencies
+. "$PROJECT_DIR/password-generation"
+
+# Define colours for readability
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+LB='\033[1;34m' # Light blue
+NC='\033[0m' # No Color
+
+################################################################################
+# Set the environment, URL, path and other important variables
+#
+################################################################################
+function environment_and_path() {
+
+    echo -e ${YELLOW}
+    echo -e "Set the root domain for this project."
+    echo -e "IMPORTANT: use the format 'example.com':"
+    echo -e ${NC}
+
+    regex="^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$"
+
+    SITE_NAME=""
+    while [[ ! $SITE_NAME =~ $regex ]]; do
+
+        echo "Enter a root domain in the format 'example.com':"
+        read SITE_NAME
+
+    done
+
+    echo -e "Please enter the admin email address for this project:"
+    read EMAIL
+
+    APP_URL=http://$SITE_NAME
+    ROOT_PATH=/var/www/html/$SITE_NAME
+
+    # Environment
+    echo -e ${YELLOW}
+    echo -e "| Choose an environment for this project:"
+    echo -e ${NC}
+
+    PS3='Select the environment for this project by entering a number from the above list:'
+    ENV_OPTIONS=("local" "staging" "production" "Quit")
+    select SITE_ENV in "${ENV_OPTIONS[@]}";
+    do
+        case "$SITE_ENV" in
+            "local")
+            #echo "$SITE_ENV selected"
+            break
+            ;;
+            "staging")
+            #echo "$SITE_ENV selected"
+            break
+            ;;
+            "production")
+            #echo "$SITE_ENV selected"
+            break
+            ;;
+            "Quit")
+            break
+            ;;
+            *) echo invalid option;;
+        esac
+
+    done
+    echo -e "${LB}$SITE_ENV${NC} selected"
+
+}
+
+################################################################################
+# Set up Laravel using Composer.
+#
+# Composer needs to be in your $PATH.
+################################################################################
+function setup_laravel() {
+
+    echo -e ${YELLOW}
+    echo -e "Sudo privilege will be used to create your new project directory."
+    echo -e "Once created, ownership of the directory will be given to $USER."
+    echo -e ${NC}
+    echo ""
+
+    cd /var/www/html
+    laravel new $SITE_NAME
+    sudo chown -R $USER:www-data $ROOT_PATH
+
+    # Set directory & file permissions using an absolute path:
+    # find /var/www/html/$SITE_NAME -type d -exec chmod 755 {} \;
+    # find /var/www/html/$SITE_NAME -type f -exec chmod 644 {} \;
+
+    # Set correct permissions
+    cd $ROOT_PATH
+    sudo chown -R www-data storage
+    sudo chown -R www-data bootstrap/cache
+
+    echo -e ${YELLOW}
+    echo -e "The new Laravel project has been created at $ROOT_PATH"
+    echo -e ${NC}
+    echo ""
+
+}
+
+################################################################################
+# Build new database.
+#
+# Username is based on the chosen database name. For shared hosting environments,
+# should this be more secure? Probably not relevant in a VPS context.
+################################################################################
+
+function setup_database() {
+
+    echo -e ${YELLOW}
+    echo -e "Create a local database with a new user."
+    echo -e "You will need to enter your MySQL/MariaDB root password."
+    echo -e ${NC}
+    echo -e ""
+
+    echo -e "Enter the name of the new database:"
+    read  DB_NAME
+
+    DB_USER=$DB_NAME
+    DB_USER+=_user
+
+    # Set a strong alpha-numeric password for the DB
+    DB_PASS=$(random_password 32 alnum)
+
+    echo -e "Enter the MySQL/MariaDB root password:"
+    read ROOT_PASSWORD
+
+    DB_ARGS="CREATE DATABASE $DB_NAME;GRANT ALL PRIVILEGES ON $DB_NAME.* TO $DB_USER@localhost IDENTIFIED BY '$DB_PASS';FLUSH PRIVILEGES;"
+    mysql -u root -p$ROOT_PASSWORD -e "$DB_ARGS"
+
+    if [ $? != "0" ]
+
+    then
+
+        echo -e ${RED}
+        echo -e "[ERROR]: Database creation failed."
+        echo -e ${NC}
+        exit 1
+
+    else
+
+        echo -e ${YELLOW}
+        echo -e "Successfully created database $DB_NAME. The database details"
+        echo -e "will be added to your project's .env file."
+        echo -e ${NC}
+        echo -e ""
+
+    fi
+
+}
+
+################################################################################
+# Generate a .env file in the project root and populate the file with values.
+#
+################################################################################
+create_config() {
+
+    read -r -d '' CONFIG_ARGS << EOF
+APP_ENV=$SITE_ENV
+APP_KEY=
+APP_DEBUG=true
+APP_LOG_LEVEL=debug
+APP_URL=$APP_URL
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=$DB_NAME
+DB_USERNAME=$DB_USER
+DB_PASSWORD=$DB_PASS
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+SESSION_DRIVER=file
+QUEUE_DRIVER=sync
+
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_DRIVER=smtp
+MAIL_HOST=mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+
+PUSHER_APP_ID=
+PUSHER_KEY=
+PUSHER_SECRET=
+
+EOF
+
+    printf "%s" "$CONFIG_ARGS" > $ROOT_PATH/.env
+
+    # Generate a new Application key
+    cd $ROOT_PATH
+    php artisan key:generate
+
+}
+
+################################################################################
+# Set up a GitHub Repo
+#
+################################################################################
+function setup_repo () {
+
+    cd $ROOT_PATH
+
+    # remove existing git repo
+    #sudo rm -rf $ROOT_PATH/.git
+    git init
+    repo_name=$1
+    dir_name=`basename $(pwd)`
+    invalid_credentials=0
+
+    if [ "$repo_name" = "" ]; then
+        echo "  Repo name (hit enter to use '$dir_name')?"
+        read repo_name
+    fi
+
+    if [ "$repo_name" = "" ]; then
+        repo_name=$dir_name
+    fi
+
+    GIT_USERNAME=`git config github.user`
+    if [ "$GIT_USERNAME" = "" ]; then
+        echo "  Could not find Git username, run 'git config --global github.user <username>'"
+        invalid_credentials=1
+    fi
+
+    token=`git config github.token`
+    if [ "$token" = "" ]; then
+        echo "  Could not find token, run 'git config --global github.token <token>'"
+        invalid_credentials=1
+    fi
+
+    if [ "$invalid_credentials" -eq "1" ]; then
+        return 1
+    fi
+
+    echo -n "  Creating Github repository '$repo_name' ..."
+    curl -u "$GIT_USERNAME:$token" https://api.github.com/user/repos -d '{"name":"'$repo_name'"}' > /dev/null 2>&1
+    echo " done."
+
+    echo -n "  Pushing local code to remote ..."
+    git remote add origin git@github.com:$GIT_USERNAME/$repo_name.git > /dev/null 2>&1
+    git push -u origin master > /dev/null 2>&1
+    git add -A
+    git commit -m "First Commit"
+    git push origin master
+    echo " done."
+
+}
+
+################################################################################
+# Configure and enable an Apache vhost directive
+#
+################################################################################
+apache_vhost() {
+
+    VHOST_NAME=$SITE_NAME.conf
+    CONFIG=/etc/apache2/sites-available/$VHOST_NAME
+
+    echo -e ${YELLOW}
+    echo -e "You have chosen to set up an Apache vhosts directive."
+    echo -e "This will involve creating and activating an Apache config file:"
+    echo -e "/etc/apache2/sites-available/$SITE_NAME.conf."
+    echo -e "This will require sudo privileges."
+    echo -e "This sets up a vhost for port 80(http protocol) only."
+    echo -e ${NC}
+
+    sudo touch $CONFIG
+
+    read -r -d '' VHOST_DIRECTIVES << EOF
+<VirtualHost *:80>
+    ServerName $SITE_NAME
+    ServerAlias www.$SITE_NAME
+    ServerAdmin $EMAIL
+    DocumentRoot /var/www/html/$SITE_NAME/public
+    <Directory /var/www/html/$SITE_NAME/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog \${APACHE_LOG_DIR}/$SITE_NAME.error.log
+    CustomLog \${APACHE_LOG_DIR}/$SITE_NAME.access.log combined
+</VirtualHost>
+
+EOF
+
+    # See http://unix.stackexchange.com/a/19708
+    # Works, but outputs to terminal which is messy:
+    # printf "%s" "$VHOST_DIRECTIVES" | sudo tee $CONFIG
+    sudo sh -c "printf '%s' '$VHOST_DIRECTIVES' > $CONFIG"
+
+    if [[ $? != "0" ]]; then
+
+        # A problem - Apache should output errors?
+        echo -e ${RED}
+        echo -e "There was a problem creating the Apache config file."
+        echo -e ${NC}
+
+    else
+
+        echo -e ${YELLOW}
+        echo -e "The VHost directives were written to $CONFIG."
+        echo -e ${NC}
+
+    fi
+
+    # enable newly created virtualhost
+    echo -e ${LB}
+    echo "Running a2ensite..."
+    echo -e ${NC}
+    sudo a2ensite $VHOST_NAME
+
+    echo -e ${LB}
+    echo "Restarting Apache..."
+    echo -e ${NC}
+    sudo /etc/init.d/apache2 restart
+
+    if [[ $? != "0" ]]; then
+
+        # A problem - Apache should output errors?
+        echo -e ${RED}
+        echo -e "Apache Could not restart. Run 'disensite $VHOST_NAME' and restart Apache to revert."
+        echo -e ${NC}
+
+    else
+
+        echo -e ${YELLOW}
+        echo -e "Apache restarted successfully.\nTo see your site, DNS needs to be set up."
+        echo -e "If developing locally, add this line to /etc/hosts file:"
+        echo -e "127.0.0.1       $SITE_NAME"
+        echo -e ${NC}
+
+    fi
+
+}
+
+function install_node_modules() {
+
+    cd $ROOT_PATH
+
+    PS3='Install Node Modules using Yarn or NPM?'
+    NODE_OPTIONS=("yarn" "npm" "Quit")
+    select NODE_OPTION in "${NODE_OPTIONS[@]}";
+    do
+        case "$NODE_OPTION" in
+            "yarn")
+            yarn install
+            break
+            ;;
+            "npm")
+            npm install
+            break
+            ;;
+            "Quit")
+            break
+            ;;
+            *) echo invalid option;;
+        esac
+
+    done
+
+}
+
+function options() {
+
+    read -p "Do you want to set up and install an Apache virtual hosts directive? [y/N]" yn
+    case $yn in
+        [Yy]* ) apache_vhost;;
+        [Nn]* ) echo "No Apache VHost setup.";;
+        * ) echo "Please answer yes or no.";;
+    esac
+
+    read -p "Do you want to install node modules? [y/N]" yn
+    case $yn in
+        [Yy]* ) install_node_modules;;
+        [Nn]* ) echo "No node modules install.";;
+        * ) echo "Please answer yes or no.";;
+    esac
+
+    read -p "Set up a new GitHub repo for $THEMENAME? [y/N]" yn
+    case $yn in
+        [Yy]* ) setup_repo;;
+        [Nn]* ) ;;
+        * ) echo "Please answer yes or no.";;
+    esac
+
+}
+
+################################################################################
+# All set? Let's go!
+#
+# Trigger the functions in this script in the correct order.
+################################################################################
+environment_and_path
+setup_laravel
+setup_database
+create_config
+options
