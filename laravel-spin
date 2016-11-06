@@ -1,9 +1,15 @@
 #!/bin/bash
 #
-# composer=/usr/local/bin/composer.phar
+# - Set up a new Laravel project
+# - Create a new MySQL/MariaDB database
+# - Set up project config (in .env)
+# - Optionally set up Apache vHost directive
+# - Optionally set up a new project GitHub repo
+# - Optionally sets up node modules for the project
 #
-# ## Requirements
-# - [Composer](https://getcomposer.org/), which should be referenced in your $PATH
+# Requires [Composer](https://getcomposer.org/), which should be referenced in your $PATH
+# Requires Laravel installer to be installed globally (`composer global require "laravel/installer"`)
+#
 ################################################################################
 
 ################################################################################
