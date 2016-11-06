@@ -113,8 +113,8 @@ function setup_laravel() {
 
     # Set correct permissions
     cd $ROOT_PATH
-    sudo chown -R www-data storage
-    sudo chown -R www-data bootstrap/cache
+    sudo chown -R www-data:$USER storage
+    sudo chown -R www-data:$USER bootstrap/cache
 
     echo -e ${YELLOW}
     echo -e "The new Laravel project has been created at $ROOT_PATH"
