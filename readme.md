@@ -2,14 +2,16 @@ Spin up a Laravel Project
 =========================
 Set up a Laravel project in an Apache server environment.
 
+This script has been written for an Ubuntu 16.04/Apache development environment.
+
 This script:
 
 - Sets up a directory and environment for your project (project under /var/www/html)
 - Downloads and installs a Laravel project to your new project directory
 - Creates a new project database
 - Configures the local .env file
-- Optionally create and enable an Apache virtual host configuration
-- Optionally creates a new GitHub repo for your project and make a first commit
+- Optionally creates and enables an Apache virtual host configuration
+- Optionally creates a new GitHub repo for your project and makes a first commit
 
 ## Requirements
 - [Composer](https://getcomposer.org/), which should be referenced in your $PATH
