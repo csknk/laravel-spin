@@ -15,6 +15,7 @@ This script:
 
 ## Requirements
 - [Composer](https://getcomposer.org/), which should be referenced in your $PATH
+- Laravel installer must be installed globally (`composer global require "laravel/installer"`)
 - To run the GitHub setup, you need a GitHub token
 
 ## Get Started
