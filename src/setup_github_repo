@@ -3,9 +3,6 @@
 # ------------------------------------------------------------------------------
 function setup_github_repo {
     cd $ROOT_PATH
-
-    # remove existing git repo
-    #sudo rm -rf $ROOT_PATH/.git
     git init
     repo_name=$1
     dir_name=`basename $(pwd)`

@@ -10,7 +10,6 @@ function generate_mysql_database {
     echo -e "You will need to enter your MySQL/MariaDB root password."
     echo -e ${NO_COLOUR}
     echo -e ""
-
     echo -e "Enter the name of the new database:"
     read  DB_NAME
 
@@ -28,16 +27,12 @@ function generate_mysql_database {
     mysql -u root -p$ROOT_PASSWORD -e "$DB_ARGS"
 
     if [ $? != "0" ]
-
     then
-
         echo -e ${RED}
         echo -e "[ERROR]: Database creation failed."
         echo -e ${NO_COLOUR}
         exit 1
-
     else
-
         echo -e ${YELLOW}
         echo -e "Successfully created database $DB_NAME. The database details"
         echo -e "will be added to your project's .env file."
@@ -45,5 +40,4 @@ function generate_mysql_database {
         echo -e ""
 
     fi
-
 }

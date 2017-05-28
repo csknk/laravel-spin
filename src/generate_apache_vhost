@@ -4,7 +4,7 @@
 # Requires an argument for site name (e.g. example.com)
 #
 # Requires previously defined variables:
-# $SITE_NAME, $YELLOW, $NC, $EMAIL, ${LIGHT_BLUE}, $RED
+# $SITE_NAME, $YELLOW, $NO_COLOUR, $EMAIL, $LIGHT_BLUE, $RED
 # ------------------------------------------------------------------------------
 function generate_apache_vhost {
     if [ -z "$1" ]
@@ -22,7 +22,7 @@ function generate_apache_vhost {
     echo -e "/etc/apache2/sites-available/$SITE_NAME.conf."
     echo -e "This will require sudo privileges."
     echo -e "This sets up a vhost for port 80(http protocol) only."
-    echo -e ${NC}
+    echo -e ${NO_COLOUR}
 
     sudo touch $CONFIG
 
@@ -51,10 +51,10 @@ EOF
     then
         echo -e ${RED}
         echo -e "There was a problem creating the Apache config file."
-        echo -e ${NC}
+        echo -e ${NO_COLOUR}
     else
         echo -e ${YELLOW}
         echo -e "The VHost directives were written to $CONFIG."
-        echo -e ${NC}
+        echo -e ${NO_COLOUR}
     fi
 }
