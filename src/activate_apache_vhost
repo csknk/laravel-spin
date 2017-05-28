@@ -1,0 +1,42 @@
+#!/bin/bash
+# Activate an Apache vhost directive.
+# ------------------------------------------------------------------------------
+function activate_apache_vhost {
+    if [ -z "$1" ]
+    then
+        echo "You must specify a site name for the Apache virtual host config filename."; exit
+    else
+        SITE_NAME=$1
+    fi
+    VHOST_NAME=$SITE_NAME.conf
+
+    # Enable the provided virtualhost config
+    echo -e ${LIGHT_BLUE}
+    echo "Running a2ensite..."
+    echo -e ${NO_COLOUR}
+    sudo a2ensite $VHOST_NAME
+
+    echo -e ${LIGHT_BLUE}
+    echo "Restarting Apache..."
+    echo -e ${NO_COLOUR}
+    sudo /etc/init.d/apache2 restart
+
+    if [[ $? != "0" ]]; then
+        # A problem - Apache should output errors.
+        echo -e ${RED}
+        echo -e "Apache Could not restart."
+        echo -e "We're going to run 'a2dissite $VHOST_NAME' and restart Apache to revert."
+        echo -e ${NO_COLOUR}
+        sudo a2dissite ${VHOST_NAME}
+        echo -e ${LIGHT_BLUE}
+        echo "Restarting Apache..."
+        echo -e ${NO_COLOUR}
+        sudo /etc/init.d/apache2 restart
+    else
+        echo -e ${YELLOW}
+        echo -e "Apache restarted successfully.\nTo see your site, DNS needs to be set up."
+        echo -e "If developing locally, add this line to /etc/hosts file:"
+        echo -e "127.0.0.1       $SITE_NAME"
+        echo -e ${NO_COLOUR}
+    fi
+}

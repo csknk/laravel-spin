@@ -1,0 +1,25 @@
+#!/bin/bash
+# Test Apache vhost setup
+# ------------------------------------------------------------------------------
+if [ -z "$1" ]
+then
+    SITE_NAME=example.com
+else
+    SITE_NAME=$1
+fi
+
+# Dummy Values
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+LIGHT_BLUE'\033[1;34m' # Light blue
+NO_COLOUR='\033[0m' # No Color
+EMAIL=test@${SITE_NAME}
+
+# Source generator
+THIS=$(readlink -f ${BASH_SOURCE[0]})
+PARENT_DIR=$(dirname $THIS)
+PROJECT_ROOT=$(dirname $PARENT_DIR)
+. "${PROJECT_ROOT}/src/generate_apache_vhost"
+
+# Run
+generate_apache_vhost $SITE_NAME

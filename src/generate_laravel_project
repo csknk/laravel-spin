@@ -1,0 +1,26 @@
+#!/bin/bash
+# Set up Laravel using Composer. Composer needs to be in your $PATH.
+# ------------------------------------------------------------------------------
+function setup_laravel {
+
+    echo -e ${YELLOW}
+    echo -e "Sudo privilege will be used to create your new project directory."
+    echo -e "Once created, ownership of the directory will be given to $USER."
+    echo -e ${NO_COLOUR}
+    echo ""
+
+    cd /var/www/html
+    laravel new $SITE_NAME
+    sudo chown -R $USER:www-data $ROOT_PATH
+
+    # Set correct permissions
+    cd $ROOT_PATH
+    sudo chown -R www-data:$USER storage
+    sudo chown -R www-data:$USER bootstrap/cache
+
+    echo -e ${YELLOW}
+    echo -e "The new Laravel project has been created at $ROOT_PATH"
+    echo -e ${NO_COLOUR}
+    echo ""
+
+}

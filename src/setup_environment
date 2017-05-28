@@ -1,0 +1,50 @@
+#!/bin/bash
+# Set the environment, URL, path and other important variables
+# ------------------------------------------------------------------------------
+function environment_and_path {
+
+    echo -e ${YELLOW}
+    echo -e "Set the root domain for this project."
+    echo -e "IMPORTANT: use the format 'example.com':"
+    echo -e ${NO_COLOUR}
+
+    # Set site URL and path
+    SITE_NAME=""
+    URL_REGEX="^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$"
+    while [[ ! $SITE_NAME =~ $URL_REGEX ]]; do
+        echo "Enter a root domain in the format 'example.com':"
+        read SITE_NAME
+    done
+    APP_URL=http://$SITE_NAME
+    ROOT_PATH=/var/www/html/$SITE_NAME
+
+    echo -e "Please enter the admin email address for this project:"
+    read EMAIL
+
+    # Environment
+    echo -e ${YELLOW}
+    echo -e "| Choose an environment for this project:"
+    echo -e ${NO_COLOUR}
+
+    PS3='Select the environment for this project by entering a number from the above list:'
+    ENV_OPTIONS=("local" "staging" "production" "Quit")
+    select SITE_ENV in "${ENV_OPTIONS[@]}";
+    do
+        case "$SITE_ENV" in
+            "local")
+            break
+            ;;
+            "staging")
+            break
+            ;;
+            "production")
+            break
+            ;;
+            "Quit")
+            break
+            ;;
+            *) echo invalid option;;
+        esac
+    done
+    echo -e "${LIGHT_BLUE}$SITE_ENV${NO_COLOUR} selected"
+}

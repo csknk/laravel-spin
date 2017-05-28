@@ -1,0 +1,52 @@
+#!/bin/bash
+# Generate a .env file in the project root and populate the file with values.
+# ------------------------------------------------------------------------------
+function generate_dotenv {
+    if [ -z "$1" ]
+    then
+        echo "You must specify root path."; exit
+    else
+        ROOT_PATH=$1
+    fi
+
+    read -r -d '' CONFIG_ARGS << EOF
+APP_ENV=$SITE_ENV
+APP_KEY=
+APP_DEBUG=true
+APP_LOG_LEVEL=debug
+APP_URL=$APP_URL
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=$DB_NAME
+DB_USERNAME=$DB_USER
+DB_PASSWORD=$DB_PASS
+
+BROADCAST_DRIVER=log
+CACHE_DRIVER=file
+SESSION_DRIVER=file
+QUEUE_DRIVER=sync
+
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_DRIVER=smtp
+MAIL_HOST=mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_ENCRYPTION=null
+
+PUSHER_APP_ID=
+PUSHER_KEY=
+PUSHER_SECRET=
+
+EOF
+    printf "%s" "$CONFIG_ARGS" > $ROOT_PATH/.env
+
+    # Generate a new Application key
+    cd $ROOT_PATH
+    php artisan key:generate
+}

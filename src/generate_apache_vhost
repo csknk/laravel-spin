@@ -1,0 +1,60 @@
+#!/bin/bash
+# Configure an Apache vhost directive.
+#
+# Requires an argument for site name (e.g. example.com)
+#
+# Requires previously defined variables:
+# $SITE_NAME, $YELLOW, $NC, $EMAIL, ${LIGHT_BLUE}, $RED
+# ------------------------------------------------------------------------------
+function generate_apache_vhost {
+    if [ -z "$1" ]
+    then
+        echo "You must specify the site name."; exit
+    else
+        SITE_NAME=$1
+    fi
+    VHOST_NAME=$SITE_NAME.conf
+    CONFIG=/etc/apache2/sites-available/$VHOST_NAME
+
+    echo -e ${YELLOW}
+    echo -e "You have chosen to set up an Apache vhosts directive."
+    echo -e "This will involve creating and activating an Apache config file:"
+    echo -e "/etc/apache2/sites-available/$SITE_NAME.conf."
+    echo -e "This will require sudo privileges."
+    echo -e "This sets up a vhost for port 80(http protocol) only."
+    echo -e ${NC}
+
+    sudo touch $CONFIG
+
+    read -r -d '' VHOST_DIRECTIVES << EOF
+<VirtualHost *:80>
+    ServerName $SITE_NAME
+    ServerAlias www.$SITE_NAME
+    ServerAdmin $EMAIL
+    DocumentRoot /var/www/html/$SITE_NAME/public
+    <Directory /var/www/html/$SITE_NAME/public>
+        Options -Indexes +FollowSymLinks
+        AllowOverride All
+        Require all granted
+    </Directory>
+    ErrorLog \${APACHE_LOG_DIR}/$SITE_NAME.error.log
+    CustomLog \${APACHE_LOG_DIR}/$SITE_NAME.access.log combined
+</VirtualHost>
+EOF
+
+    # See http://unix.stackexchange.com/a/19708
+    # Works, but outputs to terminal which is messy:
+    # printf "%s" "$VHOST_DIRECTIVES" | sudo tee $CONFIG
+    sudo sh -c "printf '%s' '$VHOST_DIRECTIVES' > $CONFIG"
+
+    if [[ $? != "0" ]]
+    then
+        echo -e ${RED}
+        echo -e "There was a problem creating the Apache config file."
+        echo -e ${NC}
+    else
+        echo -e ${YELLOW}
+        echo -e "The VHost directives were written to $CONFIG."
+        echo -e ${NC}
+    fi
+}

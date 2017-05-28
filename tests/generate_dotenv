@@ -1,0 +1,23 @@
+#!/bin/bash
+# Test Apache vhost setup
+# ------------------------------------------------------------------------------
+if [ -z "$1" ]
+then
+    echo "You must specify root path."; exit
+else
+    ROOT_PATH=$1
+fi
+
+# Dummy Values
+DB_NAME=dummy_db
+DB_USER=dummy_db_user
+DB_PASS=password123
+
+# Source generator
+THIS=$(readlink -f ${BASH_SOURCE[0]})
+PARENT_DIR=$(dirname $THIS)
+PROJECT_ROOT=$(dirname $PARENT_DIR)
+. "${PROJECT_ROOT}/src/generate_dotenv"
+
+# Run
+generate_dotenv $ROOT_PATH
