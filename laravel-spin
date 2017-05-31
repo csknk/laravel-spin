@@ -11,6 +11,13 @@
 # Requires Laravel installer to be installed globally (`composer global require "laravel/installer"`)
 # ------------------------------------------------------------------------------
 
+# Define colours for readability
+#-------------------------------------------------------------------------------
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+LIGHT_BLUE='\033[1;34m' # Light blue
+NO_COLOUR='\033[0m' # No Color
+
 # Include dependencies for this script.
 # ------------------------------------------------------------------------------
 THIS=$(readlink -f ${BASH_SOURCE[0]})
